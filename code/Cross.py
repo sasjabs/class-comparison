@@ -7,15 +7,9 @@ from itertools import product
 
 
 class Cross:
-    def __init__(self, wdir=None):
+    def __init__(self):
         self.grd_params = None
         self.arrays = None
-        if wdir is not None:
-            os.chdir(wdir)
-            self.wdir = wdir
-        else:
-            self.wdir = os.getcwd()
-
         self.cross = None
         self.reclass = None
         return
