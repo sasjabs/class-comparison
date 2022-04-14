@@ -1,7 +1,7 @@
 import os
 
-wdir = 'C:/Users/kcher/Desktop/sem10/space/cross_demo'
-os.chdir(wdir) # установка рабочей директории
+wdir = 'C:/path/to/the/working/directory' # установка рабочей директории
+os.chdir(wdir) 
 
 from Cross import Cross # импорт инструмента из Cross.py
 
