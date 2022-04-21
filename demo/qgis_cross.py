@@ -7,7 +7,7 @@ from Cross import Cross # импорт инструмента из Cross.py
 
 cr = Cross() # инициализация инструмента
 
-rasters = ['data/Class1.tif', 'data/Class2.tif'] # список входных растров
+rasters = ['data/Class2004.tif', 'data/Class2007.tif'] # список входных растров
 outputRaster = 'output/CrossMap.tif' # путь к выходному растру
 outputTable = 'output/CrossTable.csv' # путь к выходной таблице
 cr.Execute(rasters, outputRaster, outputTable) # выполнение расчёта
