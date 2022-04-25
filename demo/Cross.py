@@ -12,6 +12,7 @@ class Cross:
         self.arrays = None
         self.cross = None
         self.reclass = None
+        self.nodata = None
         return
 
     def ImportRasters(self, rasters: list):
@@ -29,7 +30,7 @@ class Cross:
             ds = gdal.Open(raster)
             if ds is None:
                 raise ValueError(f'Файл {raster} не найден')
-            ds.GetRasterBand(1).SetNoDataValue(0)
+            self.nodata = ds.GetRasterBand(1).GetNoDataValue()
             datasets.append(ds)
 
             proj = ds.GetProjection()
@@ -63,8 +64,8 @@ class Cross:
 
         # приведение всех растров к одной сетке
         for ds in datasets:
-            dst = gdal.GetDriverByName('GTiff').Create('_temp.tif', grd_width, grd_height, 1, gdalconst.GDT_UInt16)
-            dst.GetRasterBand(1).SetNoDataValue(0)
+            dst = gdal.GetDriverByName('GTiff').Create('_temp.tif', grd_width, grd_height, 1, gdalconst.GDT_UInt32)
+            dst.GetRasterBand(1).SetNoDataValue(self.nodata)
             dst.SetGeoTransform(grd_gtf)
             dst.SetProjection(grd_proj)
 
@@ -80,17 +81,17 @@ class Cross:
 
         values = [np.unique(arr) for arr in self.arrays]
         perm = list(product(*values))
-        perm = [p for p in perm if 0 not in p]
+        perm = [p for p in perm if self.nodata not in p]
         classes = [i + 1 for i in range(len(perm))]
 
         self.reclass_match = dict(zip(perm, classes))
         self.reverse_match = dict(zip(classes, perm))
 
     def ReclassComb(self, comb):
-        if 0 not in comb:
+        if self.nodata not in comb:
             return self.reclass_match[tuple(comb)]
         else:
-            return 0
+            return self.nodata
 
     def CrossMap(self):
         cross = np.apply_along_axis(self.ReclassComb, 0, self.arrays)
@@ -120,12 +121,12 @@ class Cross:
 
     def ExportMap(self, output_gtiff):
         output = gdal.GetDriverByName('GTiff').Create(output_gtiff, self.grd_params['width'],
-                                                      self.grd_params['height'], 1, gdalconst.GDT_UInt16)
+                                                      self.grd_params['height'], 1, gdalconst.GDT_UInt32)
         output.SetGeoTransform(self.grd_params['gtf'])
         output.SetProjection(self.grd_params['proj'])
 
         output.GetRasterBand(1).WriteArray(self.cross)
-        output.GetRasterBand(1).SetNoDataValue(0)
+        output.GetRasterBand(1).SetNoDataValue(self.nodata)
         output.FlushCache()
 
         del output
@@ -138,8 +139,8 @@ class Cross:
         columns = ['NewClass'] + class_columns + ['PixCount', 'Area']
 
         classes, count = np.unique(self.cross, return_counts=True)
-        count = count[classes != 0]
-        classes = classes[classes != 0]
+        count = count[classes != self.nodata]
+        classes = classes[classes != self.nodata].astype(np.int32)
 
         cell_area = np.abs(self.grd_params['gtf'][1] * self.grd_params['gtf'][5])
         areas = (cell_area * count).astype(np.float64)
